@@ -1,35 +1,37 @@
-# PACKAGE_DISPLAY_NAME
+# pi-spotify-widget
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
-[![Publish](https://github.com/OWNER/REPO/actions/workflows/publish.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/publish.yml)
-[![npm version](https://img.shields.io/npm/v/PACKAGE_NAME.svg)](https://www.npmjs.com/package/PACKAGE_NAME)
-[![npm downloads](https://img.shields.io/npm/dm/PACKAGE_NAME.svg)](https://www.npmjs.com/package/PACKAGE_NAME)
+[![CI](https://github.com/eiei114/pi-spotify-widget/actions/workflows/ci.yml/badge.svg)](https://github.com/eiei114/pi-spotify-widget/actions/workflows/ci.yml)
+[![Publish](https://github.com/eiei114/pi-spotify-widget/actions/workflows/publish.yml/badge.svg)](https://github.com/eiei114/pi-spotify-widget/actions/workflows/publish.yml)
+[![npm version](https://img.shields.io/npm/v/pi-spotify-widget.svg)](https://www.npmjs.com/package/pi-spotify-widget)
+[![npm downloads](https://img.shields.io/npm/dm/pi-spotify-widget.svg)](https://www.npmjs.com/package/pi-spotify-widget)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Pi package](https://img.shields.io/badge/pi-package-purple.svg)](https://pi.dev/packages)
 [![Trusted Publishing](https://img.shields.io/badge/npm-Trusted%20Publishing-blue.svg)](docs/release.md)
 
-> One-line pitch for this TypeScript-first Pi package.
+> Show Spotify playback status in Pi's prompt editor widget.
 
 ## What this is
 
-Briefly explain what this TypeScript-first package adds to Pi and who should use it.
+TypeScript-first Pi package that displays **Now Playing** (track, artist, playing/paused) in the prompt editor widget. Auth uses **OAuth 2.0 + PKCE** against Spotify Web API — not a static API key.
 
 ## Features
 
-- Feature 1
-- Feature 2
-- Feature 3
+- **Now Playing widget** — track, artist, playback state
+- **OAuth login** — `/spotify:login` opens browser, stores tokens locally
+- **Secret-safe status** — `/spotify:status` without exposing token values
+- **Manual refresh** — `/spotify:refresh`
+- **Token refresh** — access token lifecycle before API calls
 
 ## Install
 
 ```bash
-pi install npm:PACKAGE_NAME
+pi install npm:pi-spotify-widget
 ```
 
 Or install from GitHub:
 
 ```bash
-pi install git:github.com/OWNER/REPO
+pi install git:github.com/eiei114/pi-spotify-widget
 ```
 
 ## Quick start
@@ -43,15 +45,16 @@ pi -e .
 Then run:
 
 ```txt
-/your-command
+/spotify:login
+/spotify:status
 ```
 
 ## Package contents
 
 | Path | Purpose |
 |---|---|
-| `extensions/` | Pi TypeScript extension entrypoints (`*.ts` and `index.ts`) |
-| `lib/` | Shared TypeScript helpers |
+| `extensions/` | Pi TypeScript extension entrypoints |
+| `lib/` | Spotify auth, API client, auth store |
 | `skills/` | Agent Skills |
 | `prompts/` | Prompt templates |
 | `themes/` | Pi themes |
@@ -88,15 +91,19 @@ More docs:
 
 ## Security
 
-Pi packages can execute code with your local permissions. Review extensions before installing third-party packages.
+Pi packages can execute code with your local permissions. This package:
 
-For vulnerability reporting, see [`SECURITY.md`](SECURITY.md).
+- sends network requests to Spotify Web API
+- stores OAuth tokens under `~/.pi/agent/` (local only)
+- opens your system browser for login
+
+Review extensions before installing third-party packages. For vulnerability reporting, see [`SECURITY.md`](SECURITY.md).
 
 ## Links
 
-- npm: https://www.npmjs.com/package/PACKAGE_NAME
-- GitHub: https://github.com/OWNER/REPO
-- Issues: https://github.com/OWNER/REPO/issues
+- npm: https://www.npmjs.com/package/pi-spotify-widget
+- GitHub: https://github.com/eiei114/pi-spotify-widget
+- Issues: https://github.com/eiei114/pi-spotify-widget/issues
 
 ## License
 
