@@ -22,13 +22,11 @@
   "files": [
     "extensions/",
     "lib/",
-    "skills/",
-    "prompts/",
-    "themes/",
     "docs/",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "skills/"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -41,13 +39,7 @@
       "./extensions"
     ],
     "skills": [
-      "./skills"
-    ],
-    "prompts": [
-      "./prompts"
-    ],
-    "themes": [
-      "./themes"
+      "./skills/spotify-playback"
     ]
   },
   "publishConfig": {

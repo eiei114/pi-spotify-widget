@@ -6,9 +6,9 @@ const packageJson = JSON.parse(await readFile(new URL("../package.json", import.
 
 test("package declares pi resources", () => {
   assert.deepEqual(packageJson.pi.extensions, ["./extensions"]);
-  assert.deepEqual(packageJson.pi.skills, ["./skills"]);
-  assert.deepEqual(packageJson.pi.prompts, ["./prompts"]);
-  assert.deepEqual(packageJson.pi.themes, ["./themes"]);
+  assert.deepEqual(packageJson.pi.skills, ["./skills/spotify-playback"]);
+  assert.equal(packageJson.pi.prompts, undefined);
+  assert.equal(packageJson.pi.themes, undefined);
 });
 
 test("package is discoverable as a Pi package", () => {
