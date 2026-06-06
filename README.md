@@ -128,16 +128,9 @@ git push --follow-tags
 
 See [`docs/release.md`](docs/release.md) for setup details.
 
-## Template checklist
+## More docs
 
-After creating a repository from this template, follow [`docs/template-checklist.md`](docs/template-checklist.md).
-
-More docs:
-
-- [`docs/typescript.md`](docs/typescript.md)
 - [`docs/examples.md`](docs/examples.md)
-- [`docs/github-template.md`](docs/github-template.md)
-- [`docs/repository-settings.md`](docs/repository-settings.md)
 
 ## Security
 
