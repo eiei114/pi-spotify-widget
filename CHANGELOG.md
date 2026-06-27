@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 This project follows semantic versioning.
 
+## [0.1.3] - 2026-06-27
+
+### Changed
+
+- README aligned with the current Pi OSS template baseline: expanded install paths (project-local, version pin, `pi -e npm:`), accurate package contents (`skills/`), and explicit `npm run ci` / `npm pack --dry-run` guidance in Development and Release.
+
 ## [0.1.2] - 2026-06-06
 
 ### Fixed
