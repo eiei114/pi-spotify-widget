@@ -15,13 +15,13 @@ On npmjs.com, configure Trusted Publishing for this package:
 ## Publish
 
 ```bash
-npm version patch
+npm version patch --no-git-tag-version
 git push
 ```
 
 On `main`, `.github/workflows/auto-release.yml` checks `package.json` version. If `v<version>` does not exist yet, it creates the tag, creates the GitHub Release, then explicitly dispatches `.github/workflows/publish.yml` for that tag.
 
-The `v*` tag also triggers `.github/workflows/publish.yml`, which runs CI and publishes to npm when tags are pushed manually.
+`publish.yml` also listens for `release.published` and manual `v*.*.*` tag pushes, but the explicit dispatch from `auto-release.yml` remains the primary path because `GITHUB_TOKEN` tag pushes do not reliably fan out into a second workflow on their own.
 
 ## Workflow guardrail
 
@@ -34,7 +34,19 @@ Tags or releases created by `GITHUB_TOKEN` do not reliably fan out into another 
 - `auto-release.yml` calls `gh workflow run publish.yml --ref "$TAG" -f ref="$TAG"`
 - GitHub-hosted runner
 - No `NPM_TOKEN`
-- `npm publish` from the configured workflow file
+- `npm publish --access public` from the configured workflow file
+
+## Troubleshooting
+
+If `publish.yml` fails at `npm publish` with `E404` / `404 Not Found`, the most likely cause is npm Trusted Publishing configuration, not the GitHub workflow logic.
+
+Check npm package settings for:
+
+- package: `pi-spotify-widget`
+- repository: `eiei114/pi-spotify-widget`
+- workflow filename: `publish.yml`
+
+The workflow now prints that hint directly when npm returns 404.
 
 ## First release checklist
 
