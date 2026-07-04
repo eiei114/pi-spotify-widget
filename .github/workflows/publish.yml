@@ -32,11 +32,16 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
-          cache: npm
+          package-manager-cache: false
       - run: npm ci
       - run: npm run ci
+      - name: Print runtime versions
+        shell: bash
+        run: |
+          node --version
+          npm --version
       - name: Skip already published version
         id: published
         shell: bash
@@ -62,7 +67,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          output=$(npm publish --access public 2>&1)
+          output=$(npm publish --provenance --access public 2>&1)
           status=$?
           set -e
           printf '%s\n' "$output"

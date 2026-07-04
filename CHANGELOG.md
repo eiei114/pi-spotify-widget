@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [0.1.7] - 2026-07-04
+
+### Fixed
+
+- Move the npm publish workflow to Node 24, print runtime versions for diagnosis, and publish with `--provenance --access public` so npm Trusted Publishing has a fully compatible environment.
+
 ## [0.1.6] - 2026-07-04
 
 ### Fixed

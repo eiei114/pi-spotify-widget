@@ -32,9 +32,10 @@ Tags or releases created by `GITHUB_TOKEN` do not reliably fan out into another 
 - `permissions: id-token: write`
 - `permissions: actions: write` on auto-release so it can dispatch `publish.yml`
 - `auto-release.yml` calls `gh workflow run publish.yml --ref "$TAG" -f ref="$TAG"`
+- publish runner uses Node `24` so npm Trusted Publishing has a compatible Node/npm pair
 - GitHub-hosted runner
 - No `NPM_TOKEN`
-- `npm publish --access public` from the configured workflow file
+- `npm publish --provenance --access public` from the configured workflow file
 
 ## Troubleshooting
 
