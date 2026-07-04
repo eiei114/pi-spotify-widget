@@ -27,14 +27,34 @@ TypeScript-first Pi package that displays **Now Playing** (track, artist, playin
 
 ## Install
 
+Install the published npm package with Pi:
+
 ```bash
 pi install npm:pi-spotify-widget
+```
+
+Pin a specific version when you want reproducible installs:
+
+```bash
+pi install npm:pi-spotify-widget@0.1.3
+```
+
+Install into the current project instead of your user Pi settings:
+
+```bash
+pi install npm:pi-spotify-widget -l
 ```
 
 Or install from GitHub:
 
 ```bash
 pi install git:github.com/eiei114/pi-spotify-widget
+```
+
+Try it without permanently installing:
+
+```bash
+pi -e npm:pi-spotify-widget
 ```
 
 ## Spotify Developer setup (required)
@@ -107,18 +127,24 @@ Then run:
 
 | Path | Purpose |
 |---|---|
-| `extensions/` | Pi TypeScript extension entrypoints |
+| `extensions/` | Pi TypeScript extension entrypoints (`index.ts`) |
 | `lib/` | Spotify auth, API client, widget render |
-| `docs/` | Release and setup docs |
+| `skills/` | `spotify-playback` Agent Skill |
+| `docs/` | Release, examples, and maintainer checklist |
 
 ## Development
 
 ```bash
 npm install
 npm run ci
+npm run pack:check   # equivalent to: npm pack --dry-run
 ```
 
+`npm run ci` runs typecheck, tests, and the pack check. Run `npm pack --dry-run` directly when you only want to verify tarball contents.
+
 ## Release
+
+Before tagging, confirm `npm run ci` and `npm pack --dry-run` pass locally.
 
 This package is set up for npm Trusted Publishing, so no `NPM_TOKEN` is required.
 
@@ -131,9 +157,11 @@ On `main`, `.github/workflows/auto-release.yml` checks `package.json` version. I
 
 See [`docs/release.md`](docs/release.md) for setup details.
 
-## More docs
+## Docs
 
 - [`docs/examples.md`](docs/examples.md)
+- [`docs/release.md`](docs/release.md)
+- [`docs/template-checklist.md`](docs/template-checklist.md) — maintainer setup checklist
 
 ## Security
 
