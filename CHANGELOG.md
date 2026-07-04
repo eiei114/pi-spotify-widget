@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## [0.1.5] - 2026-07-04
+
+### Fixed
+
+- Harden npm publish workflow: support release-trigger fallback, skip already-published versions, publish with explicit public access, and print a direct Trusted Publishing hint on npm 404 failures.
+- Clarify release docs and contributor release steps around `npm version patch --no-git-tag-version` and Trusted Publishing troubleshooting.
+
+## [0.1.4] - 2026-07-04
+
+### Changed
+
 - Add Buy Me a Coffee sponsor button to README and native GitHub funding link via `.github/FUNDING.yml`.
 
 All notable changes to this project will be documented in this file.
@@ -40,4 +51,3 @@ This project follows semantic versioning.
 - `spotify-playback` Agent Skill for playback and share workflows.
 - Token refresh lifecycle and adaptive polling with stale snapshot fallback.
 - CI workflow and npm Trusted Publishing setup.
-
