@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add Buy Me a Coffee sponsor button to README and native GitHub funding link via `.github/FUNDING.yml`.
+
 All notable changes to this project will be documented in this file.
 
 This project follows semantic versioning.
@@ -36,3 +40,4 @@ This project follows semantic versioning.
 - `spotify-playback` Agent Skill for playback and share workflows.
 - Token refresh lifecycle and adaptive polling with stale snapshot fallback.
 - CI workflow and npm Trusted Publishing setup.
+
