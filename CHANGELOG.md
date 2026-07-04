@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [0.1.6] - 2026-07-04
+
+### Fixed
+
+- Trigger a fresh release after npm Trusted Publishing was reconfigured so the hardened publish workflow can publish the package successfully.
+
 ## [0.1.5] - 2026-07-04
 
 ### Fixed
