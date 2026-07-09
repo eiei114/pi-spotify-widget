@@ -1,15 +1,17 @@
 # Examples
 
-This template ships one minimal example for each Pi package resource type.
+Pi Spotify Widget shows Now Playing in the prompt editor widget and exposes playback commands.
 
 ## Extension
 
-`extensions/hello.ts` registers:
+`extensions/index.ts` registers:
 
-- `/template-hello`
-- a small session status indicator
+- `/spotify:login`, `/spotify:status`, `/spotify:logout`
+- `/spotify:refresh`, `/spotify:prev`, `/spotify:next`, `/spotify:pause`, `/spotify:play`
+- `/spotify:help`, `/spotify:share`, `/spotify:play-uri`
+- a prompt-editor widget with track, artist, and playback state
 
-Try it with:
+Try it locally:
 
 ```bash
 pi -e .
@@ -18,32 +20,29 @@ pi -e .
 Then run:
 
 ```txt
-/template-hello YourName
+/spotify:login
+/spotify:status
+/spotify:refresh
+/spotify:next
+/spotify:share
 ```
 
 ## Agent Skill
 
-`skills/example-skill/SKILL.md` demonstrates a minimal Agent Skill.
+`skills/spotify-playback/SKILL.md` maps natural-language playback and share intents to the commands above.
 
-Replace it with your real workflow instructions.
+Replace or extend it when you add new playback workflows.
 
-## Prompt template
+## OAuth setup
 
-`prompts/example.md` demonstrates a tiny prompt template with one variable.
+Each user supplies a Spotify Developer app Client ID (PKCE; no Client Secret required).
 
-## Theme
+Redirect URI: `http://127.0.0.1:8888/callback`
 
-`themes/example-theme.json` is a placeholder theme. Replace it or remove `themes/` if your package does not ship themes.
+Optional environment variable before starting Pi:
 
-## Typed custom tool
+```bash
+export PI_SPOTIFY_CLIENT_ID="your_client_id_here"
+```
 
-`extensions/index.ts` registers:
-
-- `/template-info`
-- `template_greet` custom tool
-
-The tool demonstrates:
-
-- TypeBox object parameters
-- a string enum schema via `StringEnum`
-- shared logic imported from `lib/greeting.ts`
+Tokens are stored locally under `~/.pi/agent/` and are not exposed in `/spotify:status` output.
