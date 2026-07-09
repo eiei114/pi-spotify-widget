@@ -130,7 +130,7 @@ Then run:
 | `extensions/` | Pi TypeScript extension entrypoints (`index.ts`) |
 | `lib/` | Spotify auth, API client, widget render |
 | `skills/` | `spotify-playback` Agent Skill |
-| `docs/` | Release, examples, and maintainer checklist |
+| `docs/` | Release and examples |
 
 ## Development
 
@@ -161,7 +161,6 @@ See [`docs/release.md`](docs/release.md) for setup details.
 
 - [`docs/examples.md`](docs/examples.md)
 - [`docs/release.md`](docs/release.md)
-- [`docs/template-checklist.md`](docs/template-checklist.md) — maintainer setup checklist
 
 ## Security
 
