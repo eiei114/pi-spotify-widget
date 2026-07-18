@@ -18,3 +18,10 @@ test("package is discoverable as a Pi package", () => {
 test("package uses public publish config", () => {
   assert.equal(packageJson.publishConfig.access, "public");
 });
+
+test("README release command defers tagging to auto-release workflow", async () => {
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  const releaseSection = readme.split("## Release")[1]?.split("## ")[0] ?? "";
+  assert.match(releaseSection, /npm version patch --no-git-tag-version/);
+  assert.doesNotMatch(releaseSection, /^npm version patch$/m);
+});

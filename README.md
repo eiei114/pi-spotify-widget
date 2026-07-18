@@ -149,7 +149,7 @@ Before tagging, confirm `npm run ci` and `npm pack --dry-run` pass locally.
 This package is set up for npm Trusted Publishing, so no `NPM_TOKEN` is required.
 
 ```bash
-npm version patch
+npm version patch --no-git-tag-version
 git push
 ```
 
