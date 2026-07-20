@@ -1,6 +1,6 @@
 {
   "name": "pi-spotify-widget",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Lightweight Spotify Now Playing widget for Pi Coding Agent.",
   "type": "module",
   "license": "MIT",
