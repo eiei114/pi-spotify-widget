@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Bump package version to `0.1.8` for the next patch release.
+
 ## [0.1.7] - 2026-07-04
 
 ### Fixed
