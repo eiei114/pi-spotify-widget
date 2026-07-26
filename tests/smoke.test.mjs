@@ -25,3 +25,11 @@ test("README release command defers tagging to auto-release workflow", async () 
   assert.match(releaseSection, /npm version patch --no-git-tag-version/);
   assert.doesNotMatch(releaseSection, /^npm version patch$/m);
 });
+
+test("CHANGELOG documents the current package version as released", async () => {
+  const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
+  const version = packageJson.version;
+  assert.match(changelog, new RegExp(`^## \\[${version.replace(/\./g, "\\.")}\\]`, "m"));
+  const unreleased = changelog.split("## Unreleased")[1]?.split(/^## \[/m)[0] ?? "";
+  assert.doesNotMatch(unreleased, new RegExp(`\\b${version.replace(/\./g, "\\.")}\\b`));
+});
