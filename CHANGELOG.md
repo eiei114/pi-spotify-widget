@@ -2,9 +2,15 @@
 
 ## Unreleased
 
+## [0.1.8] - 2026-07-20
+
+### Fixed
+
+- Align README release command with `npm version patch --no-git-tag-version` so tagging stays with `auto-release.yml`.
+
 ### Changed
 
-- Bump package version to `0.1.8` for the next patch release.
+- Add `version:check` PR guard and align CI bootstrap with the Pi extension template.
 
 ## [0.1.7] - 2026-07-04
 
