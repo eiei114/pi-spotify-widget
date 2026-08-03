@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [0.1.9] - 2026-08-04
+
+### Changed
+
+- Bump package version for the Discord release webhook verification.
+
 ## [0.1.8] - 2026-07-20
 
 ### Fixed
