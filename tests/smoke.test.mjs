@@ -33,3 +33,13 @@ test("CHANGELOG documents the current package version as released", async () => 
   const unreleased = changelog.split("## Unreleased")[1]?.split(/^## \[/m)[0] ?? "";
   assert.doesNotMatch(unreleased, new RegExp(`\\b${version.replace(/\./g, "\\.")}\\b`));
 });
+
+test("README security policy link is shipped in the npm package", async () => {
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  const securitySection = readme.split("## Security")[1]?.split("## ")[0] ?? "";
+  assert.match(securitySection, /\[`SECURITY\.md`\]\(SECURITY\.md\)/);
+  assert.ok(
+    packageJson.files.includes("SECURITY.md"),
+    "SECURITY.md must be listed in package.json files so npm installs include the policy",
+  );
+});
