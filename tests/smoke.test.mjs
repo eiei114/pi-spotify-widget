@@ -2,18 +2,21 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const packageRoot = fileURLToPath(new URL("..", import.meta.url));
-const npmCli = join(dirname(process.execPath), "node_modules/npm/bin/npm-cli.js");
 
 function runNpm(args, options = {}) {
-  const result = spawnSync(process.execPath, [npmCli, ...args], {
+  const npmExecPath = process.env.npm_execpath;
+  const command = npmExecPath ? process.execPath : process.platform === "win32" ? "npm.cmd" : "npm";
+  const commandArgs = npmExecPath ? [npmExecPath, ...args] : args;
+  const result = spawnSync(command, commandArgs, {
     cwd: packageRoot,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    shell: !npmExecPath && process.platform === "win32",
     ...options,
   });
   assert.equal(result.status, 0, result.stderr || result.stdout || "npm command failed");
