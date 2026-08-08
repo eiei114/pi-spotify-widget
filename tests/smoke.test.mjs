@@ -2,17 +2,17 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const packageRoot = fileURLToPath(new URL("..", import.meta.url));
+const npmCli = join(dirname(process.execPath), "node_modules/npm/bin/npm-cli.js");
 
 function runNpm(args, options = {}) {
-  const result = spawnSync("npm", args, {
+  const result = spawnSync(process.execPath, [npmCli, ...args], {
     cwd: packageRoot,
     encoding: "utf8",
-    shell: true,
     stdio: ["ignore", "pipe", "pipe"],
     ...options,
   });
@@ -68,7 +68,11 @@ test("README security policy link is shipped in the npm package", async () => {
     assert.match(securitySection, /\[`SECURITY\.md`\]\(SECURITY\.md\)/);
 
     const packagedSecurity = await readFile(join(installedRoot, "SECURITY.md"), "utf8");
-    assert.match(packagedSecurity, /security|vulnerability/i);
+    assert.match(packagedSecurity, /^# Security Policy\b/m);
+    assert.match(packagedSecurity, /^## Supported versions\b/m);
+    assert.match(packagedSecurity, /^## Reporting a vulnerability\b/m);
+    assert.match(packagedSecurity, /private security advisory/i);
+    assert.match(packagedSecurity, /local user permissions/i);
   } finally {
     await rm(packDir, { recursive: true, force: true });
     await rm(installDir, { recursive: true, force: true });
