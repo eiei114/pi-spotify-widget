@@ -1,6 +1,24 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
+
+const packageRoot = fileURLToPath(new URL("..", import.meta.url));
+
+function runNpm(args, options = {}) {
+  const result = spawnSync("npm", args, {
+    cwd: packageRoot,
+    encoding: "utf8",
+    shell: true,
+    stdio: ["ignore", "pipe", "pipe"],
+    ...options,
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout || "npm command failed");
+  return result.stdout;
+}
 
 const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 
@@ -35,11 +53,24 @@ test("CHANGELOG documents the current package version as released", async () => 
 });
 
 test("README security policy link is shipped in the npm package", async () => {
-  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
-  const securitySection = readme.split("## Security")[1]?.split("## ")[0] ?? "";
-  assert.match(securitySection, /\[`SECURITY\.md`\]\(SECURITY\.md\)/);
-  assert.ok(
-    packageJson.files.includes("SECURITY.md"),
-    "SECURITY.md must be listed in package.json files so npm installs include the policy",
-  );
+  const packDir = await mkdtemp(join(tmpdir(), "pi-spotify-widget-pack-"));
+  const installDir = await mkdtemp(join(tmpdir(), "pi-spotify-widget-install-"));
+  try {
+    runNpm(["pack", "--pack-destination", packDir, "--silent"]);
+    const tarballName = (await readdir(packDir)).find((name) => name.endsWith(".tgz"));
+    assert.ok(tarballName, "npm pack should produce a tarball");
+    const tarballPath = join(packDir, tarballName);
+
+    runNpm(["install", tarballPath, "--prefix", installDir, "--no-save", "--silent"]);
+    const installedRoot = join(installDir, "node_modules", packageJson.name);
+    const packagedReadme = await readFile(join(installedRoot, "README.md"), "utf8");
+    const securitySection = packagedReadme.split("## Security")[1]?.split("## ")[0] ?? "";
+    assert.match(securitySection, /\[`SECURITY\.md`\]\(SECURITY\.md\)/);
+
+    const packagedSecurity = await readFile(join(installedRoot, "SECURITY.md"), "utf8");
+    assert.match(packagedSecurity, /security|vulnerability/i);
+  } finally {
+    await rm(packDir, { recursive: true, force: true });
+    await rm(installDir, { recursive: true, force: true });
+  }
 });
