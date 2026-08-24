@@ -38,7 +38,7 @@ pi install npm:pi-spotify-widget
 Pin a specific version when you want reproducible installs:
 
 ```bash
-pi install npm:pi-spotify-widget@0.1.3
+pi install npm:pi-spotify-widget@0.1.10
 ```
 
 Install into the current project instead of your user Pi settings:
