@@ -52,7 +52,10 @@ test("README pinned install example matches current package version", async () =
   const version = packageJson.version;
   assert.match(
     readme,
-    new RegExp(`pi install npm:pi-spotify-widget@${version.replace(/\./g, "\\.")}`),
+    new RegExp(
+      `^pi install npm:pi-spotify-widget@${version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+      "m",
+    ),
   );
 });
 
