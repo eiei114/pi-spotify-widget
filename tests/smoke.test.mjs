@@ -47,6 +47,18 @@ test("README release command defers tagging to auto-release workflow", async () 
   assert.doesNotMatch(releaseSection, /^npm version patch$/m);
 });
 
+test("README pinned install example matches current package version", async () => {
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  const version = packageJson.version;
+  assert.match(
+    readme,
+    new RegExp(
+      `^pi install npm:pi-spotify-widget@${version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+      "m",
+    ),
+  );
+});
+
 test("CHANGELOG documents the current package version as released", async () => {
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const version = packageJson.version;
