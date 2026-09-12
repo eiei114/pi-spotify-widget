@@ -4,6 +4,7 @@ import test from "node:test";
 const {
   computeRefreshDelayMs,
   shouldRefreshAtTrackEnd,
+  needsDisplayProgressUpdate,
   remainingMs,
   POLL_IDLE_MS,
   POLL_PAUSED_MS,
@@ -52,4 +53,11 @@ test("shouldRefreshAtTrackEnd triggers at extrapolated end", () => {
   };
   assert.equal(shouldRefreshAtTrackEnd(ending), true);
   assert.equal(remainingMs(ending) <= 500, true);
+});
+
+test("needsDisplayProgressUpdate skips idle and paused snapshots", () => {
+  assert.equal(needsDisplayProgressUpdate(null), false);
+  assert.equal(needsDisplayProgressUpdate({ ...baseSnapshot, track: "" }), false);
+  assert.equal(needsDisplayProgressUpdate({ ...baseSnapshot, isPlaying: false }), false);
+  assert.equal(needsDisplayProgressUpdate(baseSnapshot), true);
 });

@@ -29,6 +29,7 @@ import {
 } from "../lib/playback-commands.ts";
 import {
   computeRefreshDelayMs,
+  needsDisplayProgressUpdate,
   shouldRefreshAtTrackEnd,
   trackIdentity,
 } from "../lib/refresh-schedule.ts";
@@ -232,10 +233,12 @@ function resetDisplayTimer(ctx: WidgetCtx): void {
   clearDisplayTimer();
   displayTimer = setInterval(() => {
     if (!lastSnapshot) return;
-    try {
-      ctx.ui.setWidget(WIDGET_ID, lastSnapshot.track ? renderSnapshot(lastSnapshot, ctx.ui.theme) : renderIdle(lastSnapshot, ctx.ui.theme));
-    } catch (error) {
-      if (isStaleContextError(error)) clearDisplayTimer();
+    if (needsDisplayProgressUpdate(lastSnapshot)) {
+      try {
+        ctx.ui.setWidget(WIDGET_ID, renderSnapshot(lastSnapshot, ctx.ui.theme));
+      } catch (error) {
+        if (isStaleContextError(error)) clearDisplayTimer();
+      }
     }
     if (!lastSnapshot.isPlaying || !lastSnapshot.track) return;
     if (!shouldRefreshAtTrackEnd(lastSnapshot)) return;

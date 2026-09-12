@@ -38,9 +38,15 @@ export function trackIdentity(snapshot: PlaybackSnapshot | null): string {
   return `${snapshot.track}::${snapshot.artist}`;
 }
 
+/** True when the 1s display tick should re-render (extrapolated progress changes). */
+export function needsDisplayProgressUpdate(snapshot: PlaybackSnapshot | null): boolean {
+  return Boolean(snapshot?.track && snapshot.isPlaying);
+}
+
 export const __testing = {
   remainingMs,
   computeRefreshDelayMs,
   shouldRefreshAtTrackEnd,
   trackIdentity,
+  needsDisplayProgressUpdate,
 };
