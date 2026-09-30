@@ -1,6 +1,6 @@
 {
   "name": "pi-spotify-widget",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Lightweight Spotify Now Playing widget for Pi Coding Agent.",
   "type": "module",
   "license": "MIT",
@@ -54,9 +54,9 @@
     "typebox": "*"
   },
   "devDependencies": {
-    "@earendil-works/pi-ai": "^0.84.1",
-    "@earendil-works/pi-coding-agent": "^0.84.1",
-    "@earendil-works/pi-tui": "latest",
+    "@earendil-works/pi-ai": "^0.99.1",
+    "@earendil-works/pi-coding-agent": "^0.99.1",
+    "@earendil-works/pi-tui": "^0.99.1",
     "typebox": "latest",
     "@types/node": "^26.0.0",
     "typescript": "^7.0.2"
