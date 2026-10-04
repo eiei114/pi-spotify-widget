@@ -55,9 +55,11 @@ test("shouldRefreshAtTrackEnd triggers at extrapolated end", () => {
   assert.equal(remainingMs(ending) <= 500, true);
 });
 
-test("needsDisplayProgressUpdate skips idle and paused snapshots", () => {
+test("needsDisplayProgressUpdate skips snapshots without changing progress", () => {
   assert.equal(needsDisplayProgressUpdate(null), false);
   assert.equal(needsDisplayProgressUpdate({ ...baseSnapshot, track: "" }), false);
   assert.equal(needsDisplayProgressUpdate({ ...baseSnapshot, isPlaying: false }), false);
+  assert.equal(needsDisplayProgressUpdate({ ...baseSnapshot, progressMs: undefined }), false);
+  assert.equal(needsDisplayProgressUpdate({ ...baseSnapshot, progressMs: Number.NaN }), false);
   assert.equal(needsDisplayProgressUpdate(baseSnapshot), true);
 });
