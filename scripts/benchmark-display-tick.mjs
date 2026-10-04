@@ -18,6 +18,10 @@ const pausedSnapshot = {
   fetchedAt: Date.now(),
 };
 const playingSnapshot = { ...pausedSnapshot, isPlaying: true };
+const playingWithoutProgressSnapshot = {
+  ...playingSnapshot,
+  progressMs: undefined,
+};
 const idleSnapshot = { track: "", artist: "", isPlaying: false, fetchedAt: Date.now() };
 
 function countLegacyRenders(snapshot) {
@@ -62,3 +66,5 @@ console.log("");
 report("idle", idleSnapshot);
 console.log("");
 report("playing", playingSnapshot);
+console.log("");
+report("playing without progress metadata", playingWithoutProgressSnapshot);

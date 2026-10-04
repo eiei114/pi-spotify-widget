@@ -40,7 +40,12 @@ export function trackIdentity(snapshot: PlaybackSnapshot | null): string {
 
 /** True when the 1s display tick should re-render (extrapolated progress changes). */
 export function needsDisplayProgressUpdate(snapshot: PlaybackSnapshot | null): boolean {
-  return Boolean(snapshot?.track && snapshot.isPlaying);
+  return Boolean(
+    snapshot?.track
+      && snapshot.isPlaying
+      && typeof snapshot.progressMs === "number"
+      && Number.isFinite(snapshot.progressMs),
+  );
 }
 
 export const __testing = {
