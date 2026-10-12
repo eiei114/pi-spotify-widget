@@ -38,7 +38,7 @@ pi install npm:pi-spotify-widget
 Pin a specific version when you want reproducible installs:
 
 ```bash
-pi install npm:pi-spotify-widget@0.1.16
+pi install npm:pi-spotify-widget@0.1.17
 ```
 
 Install into the current project instead of your user Pi settings:
@@ -155,7 +155,7 @@ npm version patch --no-git-tag-version
 git push
 ```
 
-On `main`, `.github/workflows/auto-release.yml` checks `package.json` version. If `v<version>` does not exist yet, it creates the tag, creates the GitHub Release, then explicitly dispatches `.github/workflows/publish.yml` for that tag.
+Merging or pushing a version bump runs CI only; it does not release or publish. After separate release authorization, manually dispatch `.github/workflows/auto-release.yml` on `main` to create the tag and GitHub Release, then hand off to `.github/workflows/publish.yml`.
 
 See [`docs/release.md`](docs/release.md) for setup details.
 

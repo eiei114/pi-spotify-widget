@@ -19,13 +19,15 @@ npm version patch --no-git-tag-version
 git push
 ```
 
-On `main`, `.github/workflows/auto-release.yml` checks `package.json` version. If `v<version>` does not exist yet, it creates the tag, creates the GitHub Release, then explicitly dispatches `.github/workflows/publish.yml` for that tag.
+Code pushes and merges, including version bumps on `main`, run CI only. They do not create tags/releases or publish npm packages.
+
+After separate release authorization, manually dispatch `.github/workflows/auto-release.yml` on `main`. It validates the stable version and confirms that the version changed from the previous commit and has not already been tagged. It then creates the tag and GitHub Release and explicitly dispatches `.github/workflows/publish.yml`. Other branches are rejected by the workflow gate. Do not perform this protected release action as part of routine compatibility verification.
 
 `publish.yml` also listens for `release.published` and manual `v*.*.*` tag pushes, but the explicit dispatch from `auto-release.yml` remains the primary path because `GITHUB_TOKEN` tag pushes do not reliably fan out into a second workflow on their own.
 
 ## Workflow guardrail
 
-Tags or releases created by `GITHUB_TOKEN` do not reliably fan out into another workflow through normal `push.tags` or `release.published` triggers. This repository keeps publishing reliable by having `auto-release.yml` explicitly dispatch `publish.yml` after creating the tag/release.
+Tags or releases created by `GITHUB_TOKEN` do not reliably fan out into another workflow through normal `push.tags` or `release.published` triggers. The manually dispatched `auto-release.yml` explicitly dispatches `publish.yml` after creating the tag/release.
 
 ## GitHub Actions requirements
 
