@@ -13,7 +13,9 @@ import {
 } from "./pi-sdk-smoke-contract.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const reportPath = resolve(root, "docs/verification/pi-sdk-smoke.json");
+const reportPath = process.argv.includes("--update-curated-report")
+  ? resolve(root, "docs/verification/pi-sdk-smoke.json")
+  : resolve(root, ".tmp/pi-sdk-smoke.json");
 const manifest = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 const sdk = manifest.devDependencies;
 const cases = ["extension_load", "happy_path", "error_path", "reload_cleanup", "host_shell"];
