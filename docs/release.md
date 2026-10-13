@@ -21,7 +21,7 @@ git push
 
 Code pushes and merges, including version bumps on `main`, run CI only. They do not create tags/releases or publish npm packages.
 
-After separate release authorization, manually dispatch `.github/workflows/auto-release.yml` on `main`. It validates the stable version and confirms that the version changed from the previous commit and has not already been tagged. It then creates the tag and GitHub Release and explicitly dispatches `.github/workflows/publish.yml`. Other branches are rejected by the workflow gate. Do not perform this protected release action as part of routine compatibility verification.
+After separate release authorization, manually dispatch `.github/workflows/auto-release.yml` on `main`. It validates the stable version and checks whether its matching `v<version>` tag already exists. It does not require the version to differ from the previous commit, so an untagged version remains releasable after later documentation-only commits. The workflow then creates the tag and GitHub Release and explicitly dispatches `.github/workflows/publish.yml`. Other branches are rejected by the workflow gate. Do not perform this protected release action as part of routine compatibility verification.
 
 `publish.yml` also listens for `release.published` and manual `v*.*.*` tag pushes, but the explicit dispatch from `auto-release.yml` remains the primary path because `GITHUB_TOKEN` tag pushes do not reliably fan out into a second workflow on their own.
 
