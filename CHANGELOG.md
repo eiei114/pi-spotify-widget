@@ -9,6 +9,7 @@
 ### Fixed
 
 - Keep a stable untagged version eligible for manual release after follow-up commits.
+- Resume only missing release stages when an existing version tag is retried.
 
 ## [0.1.16] - 2026-09-30
 

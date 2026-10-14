@@ -30,3 +30,14 @@ test("version-bump merges cannot trigger release or npm publication", async () =
   assert.match(release, /node scripts\/release-version-gate\.mjs/);
   assert.doesNotMatch(release, /HEAD\^|PREVIOUS_VERSION/);
 });
+
+test("manual release retries gate tag, release, and publish stages independently", async () => {
+  const release = await readWorkflow(".github/workflows/auto-release.yml");
+  const gate = await readWorkflow("scripts/release-version-gate.mjs");
+  assert.match(gate, /"release", "view"/);
+  assert.match(gate, /"run", "list"/);
+  assert.match(release, /outputs\.create_tag == 'true'/);
+  assert.match(release, /outputs\.create_release == 'true'/);
+  assert.match(release, /outputs\.dispatch_publish == 'true'/);
+  assert.doesNotMatch(release, /outputs\.released/);
+});
