@@ -1,10 +1,7 @@
-name: Auto Release
+name: Release (manual)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - package.json
+  workflow_dispatch:
 
 permissions:
   actions: write
@@ -12,6 +9,7 @@ permissions:
 
 jobs:
   release:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     name: Create release for new version
     runs-on: ubuntu-latest
     steps:
@@ -20,63 +18,39 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for version bump
+      - name: Check for unreleased version
         id: check
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/release-version-gate.mjs >> "$GITHUB_OUTPUT"
+
+      - name: Create and push release tag
+        if: steps.check.outputs.create_tag == 'true'
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.check.outputs.tag }}
         run: |
-          BEFORE="${{ github.event.before }}"
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
-          TAG="v${CURRENT_VERSION}"
+          git tag "$RELEASE_TAG"
+          git push origin "$RELEASE_TAG"
 
-          if [ -z "$BEFORE" ] || printf '%s' "$BEFORE" | grep -Eq '^0+$'; then
-            echo "No previous commit is available; skipping auto release."
-            echo "released=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if ! git cat-file -e "${BEFORE}:package.json" 2>/dev/null; then
-            echo "Previous package.json is not available; skipping auto release."
-            echo "released=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          PREVIOUS_VERSION=$(git show "${BEFORE}:package.json" | node -e "let input=''; process.stdin.on('data', c => input += c); process.stdin.on('end', () => console.log(JSON.parse(input).version || ''));")
-
-          if [ "$CURRENT_VERSION" = "$PREVIOUS_VERSION" ]; then
-            echo "package.json version did not change (${CURRENT_VERSION}); skipping."
-            echo "released=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if git tag -l "$TAG" | grep -qx "$TAG"; then
-            echo "Tag $TAG already exists; skipping."
-            echo "released=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "Version bump detected: ${PREVIOUS_VERSION} -> ${CURRENT_VERSION}."
-          echo "released=true" >> "$GITHUB_OUTPUT"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-
-      - name: Create tag and release
-        if: steps.check.outputs.released == 'true'
+      - name: Create GitHub Release
+        if: steps.check.outputs.create_release == 'true'
         shell: bash
         env:
           RELEASE_TAG: ${{ steps.check.outputs.tag }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="$RELEASE_TAG"
-          PREV_TAG=$(git tag --sort=-version:refname | head -1)
+          PREV_TAG=$(git tag --sort=-version:refname | grep -Fxv "$TAG" | head -1 || true)
           NOTES="Released ${TAG}."
           if [ -n "$PREV_TAG" ]; then
             NOTES="${NOTES}\n\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${TAG}"
           fi
-          git tag "$TAG"
-          git push origin "$TAG"
           gh release create "$TAG" --title "$TAG" --notes "$NOTES"
 
       - name: Trigger publish workflow
-        if: steps.check.outputs.released == 'true'
+        if: steps.check.outputs.dispatch_publish == 'true'
         shell: bash
         env:
           RELEASE_TAG: ${{ steps.check.outputs.tag }}

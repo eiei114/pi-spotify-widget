@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.17] - 2026-10-12
+
+### Changed
+
+- Verify compatibility with Pi SDK 1.1.0 and pin the SDK dev/test dependencies.
+
+### Fixed
+
+- Keep a stable untagged version eligible for manual release after follow-up commits.
+- Resume only missing release stages when an existing version tag is retried.
+
 ## [0.1.16] - 2026-09-30
 
 ### Changed
