@@ -40,12 +40,12 @@ const goodRun = (rows = [widget, handledPrompt, helpMessage], overrides = {}) =>
 const evaluate = (name, runs, host) => behaviorAssertions(name, {
   runs,
   host,
-  expectedVersion: "1.1.0",
+  expectedVersion: "1.2.0",
 });
 
 test("contract pins the frozen SDK and parses LF/CRLF JSON RPC output", () => {
   assert.equal(VERIFICATION_CONTRACT, "pi-sdk-behavior-v2");
-  assert.deepEqual(Object.values(SDK_VERSIONS), ["1.1.0", "1.1.0", "1.1.0", "1.1.0"]);
+  assert.deepEqual(Object.values(SDK_VERSIONS), ["1.2.0", "1.2.0", "1.2.0", "1.2.0"]);
   assert.deepEqual(parseJsonLines(`not-json\r\n${JSON.stringify(handledPrompt)}\n\n`), [handledPrompt]);
 });
 
@@ -105,14 +105,14 @@ test("reload requires the second process feature response, registration, and cle
 });
 
 test("native host-shell case requires exact SDK version and clean exit", () => {
-  const goodHost = { exit_code: 0, error: null, stdout: "1.1.0\r\n" };
+  const goodHost = { exit_code: 0, error: null, stdout: "1.2.0\r\n" };
   assert.equal(evaluate("host_shell", [], goodHost)[0].id, "native_shell_boundary");
   assert.equal(evaluate("host_shell", [], goodHost)[0].passed, true);
   for (const host of [
     { ...goodHost, stdout: "11.1.0" },
-    { ...goodHost, stdout: "1.1.0 but error" },
-    { ...goodHost, stdout: "1.1.0", exit_code: 1 },
-    { ...goodHost, stdout: "1.1.0", error: "ETIMEDOUT" },
+    { ...goodHost, stdout: "1.2.0 but error" },
+    { ...goodHost, stdout: "1.2.0", exit_code: 1 },
+    { ...goodHost, stdout: "1.2.0", error: "ETIMEDOUT" },
   ]) {
     assert.equal(evaluate("host_shell", [], host)[0].passed, false);
   }
