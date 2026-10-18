@@ -41,6 +41,10 @@ Redirect URI: `http://127.0.0.1:8888/callback`
 
 Optional environment variable before starting Pi:
 
+```powershell
+$env:PI_SPOTIFY_CLIENT_ID = "your_client_id_here"
+```
+
 ```bash
 export PI_SPOTIFY_CLIENT_ID="your_client_id_here"
 ```

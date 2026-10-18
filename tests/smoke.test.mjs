@@ -59,6 +59,11 @@ test("README pinned install example matches current package version", async () =
   );
 });
 
+test("examples include the supported Client ID environment variable in PowerShell", async () => {
+  const examples = await readFile(new URL("../docs/examples.md", import.meta.url), "utf8");
+  assert.match(examples, /\$env:PI_SPOTIFY_CLIENT_ID\s*=\s*"your_client_id_here"/);
+});
+
 test("CHANGELOG documents the current package version as released", async () => {
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const version = packageJson.version;
