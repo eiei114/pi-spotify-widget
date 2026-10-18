@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.19] - 2026-10-19
+
+### Changed
+
+- Add a copyable PowerShell Client ID setup example to the packaged examples guide.
+
 ## [0.1.18] - 2026-10-16
 
 ### Changed
