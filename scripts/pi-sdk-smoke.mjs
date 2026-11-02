@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   behaviorAssertions,
   EXTENSION_LOAD_ERROR_PATTERN,
-  SDK_VERSIONS,
+  sdkVersionsFrom,
   UNHANDLED_ERROR_PATTERN,
   VERIFICATION_CONTRACT,
 } from "./pi-sdk-smoke-contract.mjs";
@@ -18,6 +18,7 @@ const reportPath = process.argv.includes("--update-curated-report")
   : resolve(root, ".tmp/pi-sdk-smoke.json");
 const manifest = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 const sdk = manifest.devDependencies;
+const SDK_VERSIONS = sdkVersionsFrom(sdk);
 const cases = ["extension_load", "happy_path", "error_path", "reload_cleanup", "host_shell"];
 const requestedCase = process.argv.indexOf("--case");
 const selectedCases = requestedCase === -1 ? cases : [process.argv[requestedCase + 1]];

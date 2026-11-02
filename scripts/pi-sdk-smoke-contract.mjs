@@ -1,10 +1,25 @@
 export const VERIFICATION_CONTRACT = "pi-sdk-behavior-v2";
-export const SDK_VERSIONS = {
-  "@earendil-works/pi-agent-core": "1.2.0",
-  "@earendil-works/pi-ai": "1.2.0",
-  "@earendil-works/pi-coding-agent": "1.2.0",
-  "@earendil-works/pi-tui": "1.2.0",
-};
+// SDK versions are read from the caller's manifest so a dependency bump does not
+// require editing this contract. Callers still enforce that each entry is an exact
+// pin and matches the installed copy.
+export const SDK_NAMES = [
+  "@earendil-works/pi-agent-core",
+  "@earendil-works/pi-ai",
+  "@earendil-works/pi-coding-agent",
+  "@earendil-works/pi-tui",
+];
+
+export function sdkVersionsFrom(devDependencies) {
+  const versions = {};
+  for (const name of SDK_NAMES) {
+    const pinned = devDependencies?.[name];
+    if (typeof pinned !== "string" || !/^\d+\.\d+\.\d+$/.test(pinned)) {
+      throw new Error(`${name} must be pinned to an exact version in package.json; got ${pinned}`);
+    }
+    versions[name] = pinned;
+  }
+  return versions;
+}
 
 export const UNHANDLED_ERROR_PATTERN = /UnhandledPromiseRejection|unhandled (?:exception|error)|uncaught (?:exception|error)|uncaughtException|shutdown error/i;
 export const EXTENSION_LOAD_ERROR_PATTERN = /Failed to load extension|Error loading extension|Extension load failed|Failed to import extension/i;
