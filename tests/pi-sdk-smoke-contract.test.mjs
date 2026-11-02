@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   behaviorAssertions,
   parseJsonLines,
-  SDK_VERSIONS,
+  sdkVersionsFrom,
   VERIFICATION_CONTRACT,
 } from "../scripts/pi-sdk-smoke-contract.mjs";
 
@@ -43,9 +43,16 @@ const evaluate = (name, runs, host) => behaviorAssertions(name, {
   expectedVersion: "1.2.0",
 });
 
-test("contract pins the frozen SDK and parses LF/CRLF JSON RPC output", () => {
+test("contract derives the frozen SDK pins from the manifest", () => {
   assert.equal(VERIFICATION_CONTRACT, "pi-sdk-behavior-v2");
-  assert.deepEqual(Object.values(SDK_VERSIONS), ["1.2.0", "1.2.0", "1.2.0", "1.2.0"]);
+  const versions = sdkVersionsFrom({
+    "@earendil-works/pi-agent-core": "9.9.9",
+    "@earendil-works/pi-ai": "9.9.9",
+    "@earendil-works/pi-coding-agent": "9.9.9",
+    "@earendil-works/pi-tui": "9.9.9",
+  });
+  assert.deepEqual(Object.values(versions), ["9.9.9", "9.9.9", "9.9.9", "9.9.9"]);
+  assert.throws(() => sdkVersionsFrom({ "@earendil-works/pi-ai": "^1.3.0" }), /exact version/);
   assert.deepEqual(parseJsonLines(`not-json\r\n${JSON.stringify(handledPrompt)}\n\n`), [handledPrompt]);
 });
 
