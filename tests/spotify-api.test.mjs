@@ -206,14 +206,22 @@ test("spotifyUrlToTrackUri parses open.spotify.com URL", async () => {
 test("fetchCurrentlyPlaying treats 404 and 204 as idle and updates last-fetch time", async () => {
   await withApiEnv(async ({ authStore, spotifyApi, spotifyAuth }) => {
     saveFakeAuth(authStore, "fake_access_idle_test_only");
+    const originalDateNow = Date.now;
+    let expectedTimestamp = originalDateNow() + 1_000;
+    Date.now = () => expectedTimestamp;
 
-    for (const status of [404, 204]) {
-      spotifyAuth.setLastFetchAt(null);
-      const raw = await spotifyApi.fetchCurrentlyPlaying({
-        fetchFn: async () => new Response(null, { status }),
-      });
-      assert.equal(raw, null);
-      assert.equal(typeof spotifyAuth.getLastFetchAt(), "number");
+    try {
+      for (const status of [404, 204]) {
+        spotifyAuth.setLastFetchAt(null);
+        const raw = await spotifyApi.fetchCurrentlyPlaying({
+          fetchFn: async () => new Response(null, { status }),
+        });
+        assert.equal(raw, null);
+        assert.equal(spotifyAuth.getLastFetchAt(), expectedTimestamp);
+        expectedTimestamp += 1_000;
+      }
+    } finally {
+      Date.now = originalDateNow;
     }
   });
 });
@@ -344,7 +352,7 @@ for (const control of playbackControls) {
       assert.equal(tokenCalls, 1);
       assert.equal(requests.length, 2);
       for (const [index, { url, init }] of requests.entries()) {
-        assert.ok(url.endsWith(control.path));
+        assert.equal(url, `https://api.spotify.com/v1${control.path}`);
         assert.equal(init.method, control.method);
         assert.equal(
           init.headers.Authorization,
@@ -366,9 +374,15 @@ test("playback control returns login guidance when auth disappears after a 401",
   await withApiEnv(async ({ authStore, spotifyApi }) => {
     const accessToken = "fake_access_removed_after_401_test_only";
     saveFakeAuth(authStore, accessToken);
+    const requests = [];
     await assertRejectsWithoutTokenLeak(
       spotifyApi.skipToNext({
-        fetchFn: async () => {
+        fetchFn: async (url, init) => {
+          requests.push({
+            url: String(url),
+            method: init.method,
+            authorization: init.headers.Authorization,
+          });
           authStore.clearAuth();
           return new Response("unauthorized", { status: 401 });
         },
@@ -376,6 +390,11 @@ test("playback control returns login guidance when auth disappears after a 401",
       /Spotify is not authenticated\. Run \/spotify:login\./,
       [accessToken, fakeTokens[2]],
     );
+    assert.deepEqual(requests, [{
+      url: "https://api.spotify.com/v1/me/player/next",
+      method: "POST",
+      authorization: `Bearer ${accessToken}`,
+    }]);
   });
 });
 
@@ -383,9 +402,11 @@ test("playback control masks refresh failure and does not leak tokens", async ()
   await withApiEnv(async ({ authStore, spotifyApi }) => {
     const accessToken = "fake_access_control_refresh_failure_test_only";
     saveFakeAuth(authStore, accessToken);
+    const requests = [];
     await assertRejectsWithoutTokenLeak(
       spotifyApi.skipToPrevious({
         fetchFn: async (url) => {
+          requests.push(String(url).includes("/api/token") ? "token" : "player");
           if (String(url).includes("/api/token")) {
             return new Response(accessToken, { status: 503 });
           }
@@ -395,6 +416,33 @@ test("playback control masks refresh failure and does not leak tokens", async ()
       /Spotify token refresh failed\. Run \/spotify:login again\./,
       [accessToken, fakeTokens[2]],
     );
+    assert.deepEqual(requests, ["player", "token"]);
+  });
+});
+
+test("playback control does not refresh more than once after a second 401", async () => {
+  await withApiEnv(async ({ authStore, spotifyApi }) => {
+    saveFakeAuth(authStore, fakeTokens[0]);
+    const requests = [];
+    await assertRejectsWithoutTokenLeak(
+      spotifyApi.skipToNext({
+        fetchFn: async (url) => {
+          const request = String(url);
+          requests.push(request.includes("/api/token") ? "token" : "player");
+          if (request.includes("/api/token")) {
+            return new Response(JSON.stringify({
+              access_token: fakeTokens[1],
+              expires_in: 3600,
+            }), { status: 200, headers: { "Content-Type": "application/json" } });
+          }
+          return new Response("unauthorized", { status: 401 });
+        },
+      }),
+      /Spotify skip to next track failed \(HTTP 401\)\./,
+    );
+    assert.deepEqual(requests, ["player", "token", "player"]);
+    assert.equal(requests.filter((request) => request === "player").length, 2);
+    assert.equal(requests.filter((request) => request === "token").length, 1);
   });
 });
 
