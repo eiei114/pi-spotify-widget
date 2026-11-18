@@ -131,6 +131,13 @@ test("HTTP 429 keeps the stale snapshot and defers scheduled and track-end refre
         headers: { "Retry-After": "7" },
       });
     }
+    if (fetchCalls === 3) {
+      return new Response(JSON.stringify({
+        is_playing: true,
+        progress_ms: 2_500,
+        item: { name: "Recovered", duration_ms: 10_000, artists: [{ name: "Artist" }] },
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
     throw new Error("unexpected additional polling request");
   };
 
@@ -172,6 +179,11 @@ test("HTTP 429 keeps the stale snapshot and defers scheduled and track-end refre
 
     timers.intervals.at(-1).callback();
     assert.equal(fetchCalls, 2, "track-end display ticks must not bypass the retry delay");
+    assert.ok(widgets.at(-1)?.join("\n").includes("(stale)"), "display updates must preserve the stale marker");
+
+    await __testing.refreshWidget(setWidget, theme);
+    assert.ok(widgets.at(-1)?.join("\n").includes("Recovered"));
+    assert.ok(!widgets.at(-1)?.join("\n").includes("(stale)"), "a successful refresh clears the stale marker");
 
     handlers.get("session_shutdown")();
   } finally {

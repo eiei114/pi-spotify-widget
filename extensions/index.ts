@@ -85,6 +85,7 @@ const TRACK_END_FETCH_COOLDOWN_MS = 800;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 let displayTimer: ReturnType<typeof setInterval> | null = null;
 let lastSnapshot: PlaybackSnapshot | null = null;
+let lastSnapshotStale = false;
 let lastTrackEndFetchAt = 0;
 let rateLimitBackoffUntilMs = 0;
 let widgetCtx: WidgetCtx | null = null;
@@ -186,6 +187,7 @@ function applySnapshotToWidget(setWidget: SetWidget, theme: Theme, snapshot: Pla
 async function refreshWidget(setWidget: SetWidget, theme: Theme): Promise<void> {
   if (!isConfigured()) {
     lastSnapshot = null;
+    lastSnapshotStale = false;
     setWidget(WIDGET_ID, renderNoAuth(theme));
     return;
   }
@@ -195,9 +197,11 @@ async function refreshWidget(setWidget: SetWidget, theme: Theme): Promise<void> 
     const snapshot = toPlaybackSnapshot(raw);
     if (snapshot) {
       lastSnapshot = snapshot;
+      lastSnapshotStale = false;
       applySnapshotToWidget(setWidget, theme, snapshot);
     } else {
       lastSnapshot = { track: "", artist: "", isPlaying: false, fetchedAt: Date.now() };
+      lastSnapshotStale = false;
       applySnapshotToWidget(setWidget, theme, lastSnapshot);
     }
   } catch (error) {
@@ -211,6 +215,7 @@ async function refreshWidget(setWidget: SetWidget, theme: Theme): Promise<void> 
     }
     const message = error instanceof Error ? error.message : String(error);
     if (lastSnapshot?.track || lastSnapshot) {
+      lastSnapshotStale = true;
       applySnapshotToWidget(setWidget, theme, lastSnapshot, true);
       return;
     }
@@ -250,7 +255,7 @@ function resetDisplayTimer(ctx: WidgetCtx): void {
     if (!lastSnapshot) return;
     if (needsDisplayProgressUpdate(lastSnapshot)) {
       try {
-        ctx.ui.setWidget(WIDGET_ID, renderSnapshot(lastSnapshot, ctx.ui.theme));
+        ctx.ui.setWidget(WIDGET_ID, renderSnapshot(lastSnapshot, ctx.ui.theme, { stale: lastSnapshotStale }));
       } catch (error) {
         if (isStaleContextError(error)) clearDisplayTimer();
       }
@@ -331,6 +336,7 @@ async function handleSpotifyCommand(pi: ExtensionAPI, args: string, ctx: WidgetC
   if (command === "logout") {
     logout();
     lastSnapshot = null;
+    lastSnapshotStale = false;
     ctx.ui.setWidget(WIDGET_ID, renderNoAuth(theme));
     showText(ctx, "Spotify logout complete.");
     scheduleNextRefresh();
@@ -408,7 +414,7 @@ export const __testing = {
   clearRefreshTimer,
   getLastSnapshot: () => lastSnapshot,
   refreshWidget,
-  resetLastSnapshot: () => { lastSnapshot = null; rateLimitBackoffUntilMs = 0; },
+  resetLastSnapshot: () => { lastSnapshot = null; lastSnapshotStale = false; rateLimitBackoffUntilMs = 0; },
   scheduleNextRefresh,
 };
 
