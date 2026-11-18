@@ -18,6 +18,7 @@ import {
   skipToNext,
   skipToPrevious,
   spotifyUrlToTrackUri,
+  SpotifyRateLimitError,
 } from "../lib/spotify-api.ts";
 import {
   toPlaybackSnapshot,
@@ -28,6 +29,7 @@ import {
   playbackCommandById,
 } from "../lib/playback-commands.ts";
 import {
+  computeBackoffDelayMs,
   computeRefreshDelayMs,
   needsDisplayProgressUpdate,
   shouldRefreshAtTrackEnd,
@@ -84,6 +86,7 @@ let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 let displayTimer: ReturnType<typeof setInterval> | null = null;
 let lastSnapshot: PlaybackSnapshot | null = null;
 let lastTrackEndFetchAt = 0;
+let rateLimitBackoffUntilMs = 0;
 let widgetCtx: WidgetCtx | null = null;
 
 function clearRefreshTimer(): void {
@@ -198,6 +201,14 @@ async function refreshWidget(setWidget: SetWidget, theme: Theme): Promise<void> 
       applySnapshotToWidget(setWidget, theme, lastSnapshot);
     }
   } catch (error) {
+    if (error instanceof SpotifyRateLimitError) {
+      const now = Date.now();
+      rateLimitBackoffUntilMs = Math.max(rateLimitBackoffUntilMs, now + error.retryAfterMs);
+      scheduleNextRefresh(Math.max(
+        computeRefreshDelayMs(lastSnapshot, now),
+        computeBackoffDelayMs(rateLimitBackoffUntilMs, now),
+      ));
+    }
     const message = error instanceof Error ? error.message : String(error);
     if (lastSnapshot?.track || lastSnapshot) {
       applySnapshotToWidget(setWidget, theme, lastSnapshot, true);
@@ -213,7 +224,11 @@ async function refreshWidget(setWidget: SetWidget, theme: Theme): Promise<void> 
 function scheduleNextRefresh(delayOverrideMs?: number): void {
   clearRefreshTimer();
   if (!widgetCtx) return;
-  const delay = delayOverrideMs ?? computeRefreshDelayMs(lastSnapshot);
+  const now = Date.now();
+  const delay = Math.max(
+    delayOverrideMs ?? computeRefreshDelayMs(lastSnapshot, now),
+    computeBackoffDelayMs(rateLimitBackoffUntilMs, now),
+  );
   const run = () => {
     if (!widgetCtx) return;
     void refreshWidget((id, lines) => widgetCtx!.ui.setWidget(id, lines), widgetCtx.ui.theme)
@@ -243,6 +258,7 @@ function resetDisplayTimer(ctx: WidgetCtx): void {
     if (!lastSnapshot.isPlaying || !lastSnapshot.track) return;
     if (!shouldRefreshAtTrackEnd(lastSnapshot)) return;
     const now = Date.now();
+    if (computeBackoffDelayMs(rateLimitBackoffUntilMs, now) > 0) return;
     if (now - lastTrackEndFetchAt < TRACK_END_FETCH_COOLDOWN_MS) return;
     lastTrackEndFetchAt = now;
     void refreshWidget((id, lines) => ctx.ui.setWidget(id, lines), ctx.ui.theme).finally(() => scheduleNextRefresh());
@@ -392,7 +408,7 @@ export const __testing = {
   clearRefreshTimer,
   getLastSnapshot: () => lastSnapshot,
   refreshWidget,
-  resetLastSnapshot: () => { lastSnapshot = null; },
+  resetLastSnapshot: () => { lastSnapshot = null; rateLimitBackoffUntilMs = 0; },
   scheduleNextRefresh,
 };
 
