@@ -7,6 +7,32 @@ export interface FetchOptions {
   fetchFn?: typeof fetch;
 }
 
+const DEFAULT_RATE_LIMIT_RETRY_MS = 30_000;
+const MIN_RATE_LIMIT_RETRY_MS = 1_000;
+const MAX_RATE_LIMIT_RETRY_MS = 120_000;
+
+export class SpotifyRateLimitError extends Error {
+  readonly retryAfterMs: number;
+
+  constructor(retryAfterMs: number) {
+    super("Spotify currently-playing request failed (HTTP 429)");
+    this.name = "SpotifyRateLimitError";
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+function parseRetryAfterMs(header: string | null): number {
+  const value = header?.trim();
+  if (!value || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value)) {
+    return DEFAULT_RATE_LIMIT_RETRY_MS;
+  }
+
+  const seconds = Number(value);
+  if (seconds < 0) return MIN_RATE_LIMIT_RETRY_MS;
+  if (!Number.isFinite(seconds)) return MAX_RATE_LIMIT_RETRY_MS;
+  return Math.min(MAX_RATE_LIMIT_RETRY_MS, Math.max(MIN_RATE_LIMIT_RETRY_MS, seconds * 1_000));
+}
+
 async function authorizedRequest(
   method: string,
   path: string,
@@ -92,6 +118,10 @@ export async function fetchCurrentlyPlaying(
   if (res.status === 204 || res.status === 404) {
     setLastFetchAt(Date.now());
     return null;
+  }
+
+  if (res.status === 429) {
+    throw new SpotifyRateLimitError(parseRetryAfterMs(res.headers.get("Retry-After")));
   }
 
   if (!res.ok) {

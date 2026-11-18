@@ -249,24 +249,55 @@ test("fetchCurrentlyPlaying swallows a failed refresh after 401", async () => {
   });
 });
 
-for (const status of [429, 500]) {
-  test(`fetchCurrentlyPlaying reports HTTP ${status} without leaking tokens`, async () => {
-    await withApiEnv(async ({ authStore, spotifyApi }) => {
-      const accessToken = `fake_access_http_${status}_test_only`;
-      saveFakeAuth(authStore, accessToken);
+test("fetchCurrentlyPlaying reports HTTP 500 without leaking tokens", async () => {
+  await withApiEnv(async ({ authStore, spotifyApi }) => {
+    const accessToken = "fake_access_http_500_test_only";
+    saveFakeAuth(authStore, accessToken);
+    await assert.rejects(
+      spotifyApi.fetchCurrentlyPlaying({
+        fetchFn: async () => new Response("request failed", { status: 500 }),
+      }),
+      (error) => {
+        assert.equal(error.message, "Spotify currently-playing request failed (HTTP 500)");
+        assertNoTokenLeak(error, [accessToken, fakeTokens[2]]);
+        return true;
+      },
+    );
+  });
+});
+
+test("fetchCurrentlyPlaying parses, defaults, and clamps Retry-After on HTTP 429", async () => {
+  await withApiEnv(async ({ authStore, spotifyApi }) => {
+    const accessToken = "fake_access_http_429_test_only";
+    saveFakeAuth(authStore, accessToken);
+
+    for (const { header, expectedMs } of [
+      { header: "7", expectedMs: 7_000 },
+      { header: null, expectedMs: 30_000 },
+      { header: "999999", expectedMs: 120_000 },
+      { header: "-7", expectedMs: 1_000 },
+      { header: "not-a-number", expectedMs: 30_000 },
+    ]) {
       await assert.rejects(
         spotifyApi.fetchCurrentlyPlaying({
-          fetchFn: async () => new Response("request failed", { status }),
+          fetchFn: async () => new Response("private response body", {
+            status: 429,
+            headers: header === null ? {} : { "Retry-After": header },
+          }),
         }),
         (error) => {
-          assert.equal(error.message, `Spotify currently-playing request failed (HTTP ${status})`);
+          assert.ok(error instanceof spotifyApi.SpotifyRateLimitError);
+          assert.equal(error.name, "SpotifyRateLimitError");
+          assert.equal(error.retryAfterMs, expectedMs);
+          assert.equal(error.message, "Spotify currently-playing request failed (HTTP 429)");
           assertNoTokenLeak(error, [accessToken, fakeTokens[2]]);
+          assert.equal(error.message.includes(header ?? "private response body"), false);
           return true;
         },
       );
-    });
+    }
   });
-}
+});
 
 test("fetchCurrentlyPlaying does not retry a second 401", async () => {
   await withApiEnv(async ({ authStore, spotifyApi }) => {
@@ -487,4 +518,24 @@ test("assertPlaybackControlOk handles success, no-device, and other HTTP statuse
       },
     );
   }
+});
+
+test("playback control keeps the existing HTTP 429 error instead of rate-limit retry handling", async () => {
+  await withApiEnv(async ({ authStore, spotifyApi }) => {
+    saveFakeAuth(authStore, "fake_access_control_429_test_only");
+    await assert.rejects(
+      spotifyApi.skipToNext({
+        fetchFn: async () => new Response("private response body", {
+          status: 429,
+          headers: { "Retry-After": "7" },
+        }),
+      }),
+      (error) => {
+        assert.equal(error.message, "Spotify skip to next track failed (HTTP 429).");
+        assert.equal(error instanceof spotifyApi.SpotifyRateLimitError, false);
+        assert.equal(error.message.includes("7"), false);
+        return true;
+      },
+    );
+  });
 });

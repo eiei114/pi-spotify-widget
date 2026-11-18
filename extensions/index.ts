@@ -18,6 +18,7 @@ import {
   skipToNext,
   skipToPrevious,
   spotifyUrlToTrackUri,
+  SpotifyRateLimitError,
 } from "../lib/spotify-api.ts";
 import {
   toPlaybackSnapshot,
@@ -28,6 +29,7 @@ import {
   playbackCommandById,
 } from "../lib/playback-commands.ts";
 import {
+  computeBackoffDelayMs,
   computeRefreshDelayMs,
   needsDisplayProgressUpdate,
   shouldRefreshAtTrackEnd,
@@ -83,7 +85,9 @@ const TRACK_END_FETCH_COOLDOWN_MS = 800;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 let displayTimer: ReturnType<typeof setInterval> | null = null;
 let lastSnapshot: PlaybackSnapshot | null = null;
+let lastSnapshotStale = false;
 let lastTrackEndFetchAt = 0;
+let rateLimitBackoffUntilMs = 0;
 let widgetCtx: WidgetCtx | null = null;
 
 function clearRefreshTimer(): void {
@@ -183,6 +187,7 @@ function applySnapshotToWidget(setWidget: SetWidget, theme: Theme, snapshot: Pla
 async function refreshWidget(setWidget: SetWidget, theme: Theme): Promise<void> {
   if (!isConfigured()) {
     lastSnapshot = null;
+    lastSnapshotStale = false;
     setWidget(WIDGET_ID, renderNoAuth(theme));
     return;
   }
@@ -192,14 +197,25 @@ async function refreshWidget(setWidget: SetWidget, theme: Theme): Promise<void> 
     const snapshot = toPlaybackSnapshot(raw);
     if (snapshot) {
       lastSnapshot = snapshot;
+      lastSnapshotStale = false;
       applySnapshotToWidget(setWidget, theme, snapshot);
     } else {
       lastSnapshot = { track: "", artist: "", isPlaying: false, fetchedAt: Date.now() };
+      lastSnapshotStale = false;
       applySnapshotToWidget(setWidget, theme, lastSnapshot);
     }
   } catch (error) {
+    if (error instanceof SpotifyRateLimitError) {
+      const now = Date.now();
+      rateLimitBackoffUntilMs = Math.max(rateLimitBackoffUntilMs, now + error.retryAfterMs);
+      scheduleNextRefresh(Math.max(
+        computeRefreshDelayMs(lastSnapshot, now),
+        computeBackoffDelayMs(rateLimitBackoffUntilMs, now),
+      ));
+    }
     const message = error instanceof Error ? error.message : String(error);
     if (lastSnapshot?.track || lastSnapshot) {
+      lastSnapshotStale = true;
       applySnapshotToWidget(setWidget, theme, lastSnapshot, true);
       return;
     }
@@ -213,7 +229,11 @@ async function refreshWidget(setWidget: SetWidget, theme: Theme): Promise<void> 
 function scheduleNextRefresh(delayOverrideMs?: number): void {
   clearRefreshTimer();
   if (!widgetCtx) return;
-  const delay = delayOverrideMs ?? computeRefreshDelayMs(lastSnapshot);
+  const now = Date.now();
+  const delay = Math.max(
+    delayOverrideMs ?? computeRefreshDelayMs(lastSnapshot, now),
+    computeBackoffDelayMs(rateLimitBackoffUntilMs, now),
+  );
   const run = () => {
     if (!widgetCtx) return;
     void refreshWidget((id, lines) => widgetCtx!.ui.setWidget(id, lines), widgetCtx.ui.theme)
@@ -235,7 +255,7 @@ function resetDisplayTimer(ctx: WidgetCtx): void {
     if (!lastSnapshot) return;
     if (needsDisplayProgressUpdate(lastSnapshot)) {
       try {
-        ctx.ui.setWidget(WIDGET_ID, renderSnapshot(lastSnapshot, ctx.ui.theme));
+        ctx.ui.setWidget(WIDGET_ID, renderSnapshot(lastSnapshot, ctx.ui.theme, { stale: lastSnapshotStale }));
       } catch (error) {
         if (isStaleContextError(error)) clearDisplayTimer();
       }
@@ -243,6 +263,7 @@ function resetDisplayTimer(ctx: WidgetCtx): void {
     if (!lastSnapshot.isPlaying || !lastSnapshot.track) return;
     if (!shouldRefreshAtTrackEnd(lastSnapshot)) return;
     const now = Date.now();
+    if (computeBackoffDelayMs(rateLimitBackoffUntilMs, now) > 0) return;
     if (now - lastTrackEndFetchAt < TRACK_END_FETCH_COOLDOWN_MS) return;
     lastTrackEndFetchAt = now;
     void refreshWidget((id, lines) => ctx.ui.setWidget(id, lines), ctx.ui.theme).finally(() => scheduleNextRefresh());
@@ -315,6 +336,7 @@ async function handleSpotifyCommand(pi: ExtensionAPI, args: string, ctx: WidgetC
   if (command === "logout") {
     logout();
     lastSnapshot = null;
+    lastSnapshotStale = false;
     ctx.ui.setWidget(WIDGET_ID, renderNoAuth(theme));
     showText(ctx, "Spotify logout complete.");
     scheduleNextRefresh();
@@ -392,7 +414,7 @@ export const __testing = {
   clearRefreshTimer,
   getLastSnapshot: () => lastSnapshot,
   refreshWidget,
-  resetLastSnapshot: () => { lastSnapshot = null; },
+  resetLastSnapshot: () => { lastSnapshot = null; lastSnapshotStale = false; rateLimitBackoffUntilMs = 0; },
   scheduleNextRefresh,
 };
 
