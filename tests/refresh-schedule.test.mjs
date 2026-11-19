@@ -3,6 +3,7 @@ import test from "node:test";
 
 const {
   computeRefreshDelayMs,
+  computeBackoffDelayMs,
   shouldRefreshAtTrackEnd,
   needsDisplayProgressUpdate,
   remainingMs,
@@ -43,6 +44,13 @@ test("computeRefreshDelayMs slows down when paused", () => {
 
 test("computeRefreshDelayMs uses idle interval without track", () => {
   assert.equal(computeRefreshDelayMs(null), POLL_IDLE_MS);
+});
+
+test("computeBackoffDelayMs returns only the remaining time before retry", () => {
+  assert.equal(computeBackoffDelayMs(10_000, 8_000), 2_000);
+  assert.equal(computeBackoffDelayMs(10_000, 10_000), 0);
+  assert.equal(computeBackoffDelayMs(10_000, 12_000), 0);
+  assert.equal(computeBackoffDelayMs(Number.NaN, 8_000), 0);
 });
 
 test("shouldRefreshAtTrackEnd triggers at extrapolated end", () => {

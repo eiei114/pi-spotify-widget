@@ -8,6 +8,12 @@ export const POLL_NEAR_END_MS = 1_500;
 export const NEAR_END_THRESHOLD_MS = 5_000;
 export const TRACK_END_GRACE_MS = 500;
 
+/** Remaining milliseconds until a rate-limit retry deadline, or zero once it passes. */
+export function computeBackoffDelayMs(retryAtMs: number, now = Date.now()): number {
+  if (!Number.isFinite(retryAtMs) || !Number.isFinite(now)) return 0;
+  return Math.max(0, retryAtMs - now);
+}
+
 export function remainingMs(snapshot: PlaybackSnapshot, now = Date.now()): number | null {
   if (!snapshot.isPlaying) return null;
   const progress = effectiveProgressMs(snapshot, now);
@@ -51,6 +57,7 @@ export function needsDisplayProgressUpdate(snapshot: PlaybackSnapshot | null): b
 export const __testing = {
   remainingMs,
   computeRefreshDelayMs,
+  computeBackoffDelayMs,
   shouldRefreshAtTrackEnd,
   trackIdentity,
   needsDisplayProgressUpdate,
