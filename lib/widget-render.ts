@@ -43,13 +43,13 @@ export function effectiveProgressMs(snapshot: PlaybackSnapshot, now = Date.now()
   if (typeof snapshot.progressMs !== "number" || !Number.isFinite(snapshot.progressMs)) {
     return undefined;
   }
-  if (!snapshot.isPlaying) return Math.max(0, snapshot.progressMs);
-  const elapsed = Math.max(0, now - snapshot.fetchedAt);
-  const live = snapshot.progressMs + elapsed;
+  const progress = snapshot.isPlaying
+    ? snapshot.progressMs + Math.max(0, now - snapshot.fetchedAt)
+    : Math.max(0, snapshot.progressMs);
   if (typeof snapshot.durationMs === "number" && snapshot.durationMs > 0) {
-    return Math.min(snapshot.durationMs, live);
+    return Math.min(snapshot.durationMs, progress);
   }
-  return live;
+  return progress;
 }
 
 export function renderSeekBar(

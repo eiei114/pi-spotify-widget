@@ -51,7 +51,19 @@ test("renderSnapshot shows paused icon and frozen progress", () => {
   const lines = renderSnapshot({ ...snapshot, isPlaying: false }, theme, { now: 1_700_000_030_000 });
   assert.equal(lines.length, 2);
   assert.match(lines[0], /⏸ Track Name/);
-  assert.match(lines[1], /◆/);
+  assert.match(lines[1], /^1:30 .*◆.* 4:00$/);
+});
+
+test("renderSnapshot caps paused progress at the end of the track", () => {
+  const paused = { ...snapshot, isPlaying: false, progressMs: 181_000, durationMs: 180_000 };
+  const lines = renderSnapshot(paused, theme, { now: paused.fetchedAt + 30_000 });
+  assert.equal(lines[1], `3:00 ${"━".repeat(17)}◆ 3:00`);
+});
+
+test("renderSnapshot shows only elapsed time when duration is missing", () => {
+  const paused = { ...snapshot, isPlaying: false, durationMs: undefined };
+  const lines = renderSnapshot(paused, theme, { now: paused.fetchedAt + 30_000 });
+  assert.equal(lines[1], "1:30 elapsed");
 });
 
 test("renderSnapshot marks stale snapshots", () => {
