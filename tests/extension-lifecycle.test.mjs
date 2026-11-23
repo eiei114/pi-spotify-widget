@@ -5,6 +5,8 @@ import { join } from "node:path";
 import test from "node:test";
 
 import spotifyWidgetExtension, { __testing } from "../extensions/index.ts";
+import { saveAuth } from "../lib/auth-store.ts";
+import { POLL_PLAYING_MS } from "../lib/refresh-schedule.ts";
 
 test("session_shutdown clears both widget timers and prevents refresh rescheduling", async () => {
   const agentDir = mkdtempSync(join(tmpdir(), "pi-spotify-widget-lifecycle-"));
@@ -79,6 +81,80 @@ test("session_shutdown clears both widget timers and prevents refresh rescheduli
     globalThis.clearInterval = originalTimers.clearInterval;
     if (originalAgentDir === undefined) delete process.env.PI_SPOTIFY_AGENT_DIR;
     else process.env.PI_SPOTIFY_AGENT_DIR = originalAgentDir;
+    rmSync(agentDir, { recursive: true, force: true });
+  }
+});
+
+test("manual refresh of an unchanged track fetches once and resumes delayed polling", async (t) => {
+  const agentDir = mkdtempSync(join(tmpdir(), "pi-spotify-widget-manual-refresh-"));
+  const previousAgentDir = process.env.PI_SPOTIFY_AGENT_DIR;
+  const previousClientId = process.env.PI_SPOTIFY_CLIENT_ID;
+  const now = 1_000_000;
+  const pendingPolls = new Set();
+  const handlers = new Map();
+  const commands = new Map();
+  const requests = [];
+
+  try {
+    process.env.PI_SPOTIFY_AGENT_DIR = agentDir;
+    process.env.PI_SPOTIFY_CLIENT_ID = "test-client-id";
+    t.mock.method(Date, "now", () => now);
+    t.mock.method(globalThis, "setTimeout", (callback, delay) => {
+      const handle = { callback, delay, unref() {} };
+      pendingPolls.add(handle);
+      return handle;
+    });
+    t.mock.method(globalThis, "clearTimeout", (handle) => pendingPolls.delete(handle));
+    t.mock.method(globalThis, "setInterval", () => ({ unref() {} }));
+    t.mock.method(globalThis, "clearInterval", () => {});
+    t.mock.method(globalThis, "fetch", async (url) => {
+      requests.push(new URL(url).pathname);
+      return Response.json({
+        is_playing: true,
+        progress_ms: 2_500,
+        item: { name: "Same Track", duration_ms: 60_000, artists: [{ name: "Artist" }] },
+      });
+    });
+    saveAuth({
+      accessToken: "fake_access_manual_refresh_test_only",
+      refreshToken: "fake_refresh_manual_refresh_test_only",
+      expiresAt: now + 3_600_000,
+      scope: "user-read-currently-playing",
+      updatedAt: new Date(now).toISOString(),
+    });
+
+    spotifyWidgetExtension({
+      on: (event, handler) => handlers.set(event, handler),
+      registerCommand: (name, command) => commands.set(name, command),
+    });
+    const ctx = {
+      hasUI: true,
+      ui: {
+        notify: () => {},
+        setWidget: () => {},
+        setStatus: () => {},
+        theme: { fg: (_color, text) => text },
+      },
+    };
+
+    await handlers.get("session_start")({}, ctx);
+    assert.deepEqual(requests, ["/v1/me/player/currently-playing"]);
+    const [startupPoll] = pendingPolls;
+    assert.equal(startupPoll?.delay, POLL_PLAYING_MS);
+
+    await commands.get("spotify:refresh").handler("", ctx);
+
+    assert.deepEqual(requests.slice(1), ["/v1/me/player/currently-playing"],
+      "manual refresh should make exactly one immediate playback request");
+    assert.ok(!pendingPolls.has(startupPoll), "manual refresh replaces the startup poll");
+    assert.deepEqual([...pendingPolls].map(({ delay }) => delay), [POLL_PLAYING_MS]);
+  } finally {
+    __testing.clearAllTimers();
+    __testing.resetLastSnapshot();
+    if (previousAgentDir === undefined) delete process.env.PI_SPOTIFY_AGENT_DIR;
+    else process.env.PI_SPOTIFY_AGENT_DIR = previousAgentDir;
+    if (previousClientId === undefined) delete process.env.PI_SPOTIFY_CLIENT_ID;
+    else process.env.PI_SPOTIFY_CLIENT_ID = previousClientId;
     rmSync(agentDir, { recursive: true, force: true });
   }
 });
