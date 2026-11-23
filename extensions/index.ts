@@ -345,7 +345,7 @@ async function handleSpotifyCommand(pi: ExtensionAPI, args: string, ctx: WidgetC
 
   if (command === "refresh") {
     await refreshWidget((id, lines) => ctx.ui.setWidget(id, lines), theme);
-    scheduleNextRefresh(0);
+    scheduleNextRefresh();
     showText(ctx, "Spotify playback snapshot refreshed.");
     return;
   }
