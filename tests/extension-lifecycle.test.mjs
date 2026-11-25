@@ -85,7 +85,7 @@ test("session_shutdown clears both widget timers and prevents refresh rescheduli
   }
 });
 
-test("manual refresh of an unchanged track fetches once and resumes delayed polling", async (t) => {
+test("unchanged manual refresh fetches once; a same-title track change gets an immediate follow-up", async (t) => {
   const agentDir = mkdtempSync(join(tmpdir(), "pi-spotify-widget-manual-refresh-"));
   const previousAgentDir = process.env.PI_SPOTIFY_AGENT_DIR;
   const previousClientId = process.env.PI_SPOTIFY_CLIENT_ID;
@@ -94,6 +94,7 @@ test("manual refresh of an unchanged track fetches once and resumes delayed poll
   const handlers = new Map();
   const commands = new Map();
   const requests = [];
+  let trackId = "original-recording";
 
   try {
     process.env.PI_SPOTIFY_AGENT_DIR = agentDir;
@@ -112,7 +113,7 @@ test("manual refresh of an unchanged track fetches once and resumes delayed poll
       return Response.json({
         is_playing: true,
         progress_ms: 2_500,
-        item: { name: "Same Track", duration_ms: 60_000, artists: [{ name: "Artist" }] },
+        item: { id: trackId, name: "Same Track", duration_ms: 60_000, artists: [{ name: "Artist" }] },
       });
     });
     saveAuth({
@@ -147,6 +148,15 @@ test("manual refresh of an unchanged track fetches once and resumes delayed poll
     assert.deepEqual(requests.slice(1), ["/v1/me/player/currently-playing"],
       "manual refresh should make exactly one immediate playback request");
     assert.ok(!pendingPolls.has(startupPoll), "manual refresh replaces the startup poll");
+    assert.deepEqual([...pendingPolls].map(({ delay }) => delay), [POLL_PLAYING_MS]);
+
+    trackId = "alternate-recording";
+    await __testing.refreshWidget(ctx.ui.setWidget, ctx.ui.theme);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(__testing.getLastSnapshot()?.trackId, trackId);
+    assert.deepEqual(requests.slice(2), ["/v1/me/player/currently-playing", "/v1/me/player/currently-playing"],
+      "the change should trigger one immediate follow-up request");
     assert.deepEqual([...pendingPolls].map(({ delay }) => delay), [POLL_PLAYING_MS]);
   } finally {
     __testing.clearAllTimers();

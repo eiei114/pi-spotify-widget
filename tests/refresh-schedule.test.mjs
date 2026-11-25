@@ -5,6 +5,7 @@ const {
   computeRefreshDelayMs,
   computeBackoffDelayMs,
   shouldRefreshAtTrackEnd,
+  hasTrackChanged,
   needsDisplayProgressUpdate,
   remainingMs,
   POLL_IDLE_MS,
@@ -21,6 +22,33 @@ const baseSnapshot = {
   durationMs: 60_000,
   fetchedAt: Date.now(),
 };
+
+test("hasTrackChanged prefers Spotify IDs when both snapshots have them", () => {
+  const original = { ...baseSnapshot, trackId: "original" };
+  assert.equal(hasTrackChanged(original, { ...original, trackId: "alternate" }), true);
+  assert.equal(hasTrackChanged(original, { ...original, track: "New title", artist: "New artist" }), false);
+});
+
+test("hasTrackChanged falls back to labels if either ID is missing", () => {
+  const renamed = { ...baseSnapshot, track: "Other Song" };
+  const otherArtist = { ...baseSnapshot, artist: "Other Artist" };
+  const identified = { ...baseSnapshot, trackId: "original" };
+
+  assert.equal(hasTrackChanged(baseSnapshot, { ...baseSnapshot }), false);
+  assert.equal(hasTrackChanged(baseSnapshot, renamed), true);
+  assert.equal(hasTrackChanged(baseSnapshot, otherArtist), true);
+  assert.equal(hasTrackChanged(identified, baseSnapshot), false);
+  assert.equal(hasTrackChanged(baseSnapshot, identified), false);
+  assert.equal(hasTrackChanged(identified, renamed), true);
+  assert.equal(hasTrackChanged(renamed, identified), true);
+});
+
+test("hasTrackChanged ignores entering or leaving idle", () => {
+  const idle = { ...baseSnapshot, track: "", artist: "", isPlaying: false };
+  assert.equal(hasTrackChanged(null, baseSnapshot), false);
+  assert.equal(hasTrackChanged(idle, baseSnapshot), false);
+  assert.equal(hasTrackChanged(baseSnapshot, idle), false);
+});
 
 test("computeRefreshDelayMs uses playing interval by default", () => {
   assert.equal(computeRefreshDelayMs(baseSnapshot), POLL_PLAYING_MS);
