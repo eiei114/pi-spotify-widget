@@ -33,7 +33,7 @@ import {
   computeRefreshDelayMs,
   needsDisplayProgressUpdate,
   shouldRefreshAtTrackEnd,
-  trackIdentity,
+  hasTrackChanged,
 } from "../lib/refresh-schedule.ts";
 import {
   REDIRECT_URI,
@@ -191,7 +191,7 @@ async function refreshWidget(setWidget: SetWidget, theme: Theme): Promise<void> 
     setWidget(WIDGET_ID, renderNoAuth(theme));
     return;
   }
-  const previousIdentity = trackIdentity(lastSnapshot);
+  const previousSnapshot = lastSnapshot;
   try {
     const raw = await fetchCurrentlyPlaying();
     const snapshot = toPlaybackSnapshot(raw);
@@ -222,8 +222,7 @@ async function refreshWidget(setWidget: SetWidget, theme: Theme): Promise<void> 
     setWidget(WIDGET_ID, renderError(message, theme));
     return;
   }
-  const nextIdentity = trackIdentity(lastSnapshot);
-  if (previousIdentity && nextIdentity && previousIdentity !== nextIdentity) scheduleNextRefresh(0);
+  if (hasTrackChanged(previousSnapshot, lastSnapshot)) scheduleNextRefresh(0);
 }
 
 function scheduleNextRefresh(delayOverrideMs?: number): void {

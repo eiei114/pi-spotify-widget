@@ -39,9 +39,10 @@ export function shouldRefreshAtTrackEnd(snapshot: PlaybackSnapshot, now = Date.n
   return remaining <= TRACK_END_GRACE_MS;
 }
 
-export function trackIdentity(snapshot: PlaybackSnapshot | null): string {
-  if (!snapshot?.track) return "";
-  return `${snapshot.track}::${snapshot.artist}`;
+export function hasTrackChanged(previous: PlaybackSnapshot | null, next: PlaybackSnapshot | null): boolean {
+  if (!previous?.track || !next?.track) return false;
+  if (previous.trackId && next.trackId) return previous.trackId !== next.trackId;
+  return `${previous.track}::${previous.artist}` !== `${next.track}::${next.artist}`;
 }
 
 /** True when the 1s display tick should re-render (extrapolated progress changes). */
@@ -59,6 +60,6 @@ export const __testing = {
   computeRefreshDelayMs,
   computeBackoffDelayMs,
   shouldRefreshAtTrackEnd,
-  trackIdentity,
+  hasTrackChanged,
   needsDisplayProgressUpdate,
 };
